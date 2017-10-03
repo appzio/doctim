@@ -45,7 +45,7 @@ class Parser {
 
         $output['file_name'] = $original;
         $output['doc_comment'] = $this->extractDocComment();
-        $output['doc_comment'] = $this->extractDocNamespace();
+        $output['doc_namespace'] = $this->extractDocNamespace();
         $class = $this->extractClassInfo();
         if($class){
             $output['class'] = $class;
@@ -158,7 +158,10 @@ class Parser {
 
         foreach ($this->tokens as $token){
             if($token[0]['type'] == 'T_NAMESPACE'){
-                return $this->glue($token);
+                $out = $this->glue($token);
+                $out = str_replace('namespace', '', $out);
+                $out = $this->cleanup($out);
+                return $out;
             }
         }
 
@@ -196,6 +199,7 @@ class Parser {
         }
 
         if(isset($string)){
+            $string = str_replace('class', '', $string);
             return trim($string);
         }
 

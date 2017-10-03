@@ -3,11 +3,13 @@
 namespace Doctim\Parsers;
 
 
+use function exp;
 use function explode;
 use function implode;
 use function preg_match;
 use function preg_replace;
 use function str_replace;
+use function stristr;
 use function substr;
 
 trait DocumentationParser
@@ -25,11 +27,12 @@ trait DocumentationParser
         foreach($data as $item){
             $string .= $item['data'];
             if($item['type'] == 'T_STRING'){
-                $output['name'] = $item['data'];
+                $string = str_replace('use', '', $item['data']);
+                $output['name'] = $this->cleanup($string);
             }
         }
 
-        $output['call'] = $string;
+        $output['call'] = 'use '.$this->cleanup($string);
         return $output;
     }
 
@@ -43,7 +46,7 @@ trait DocumentationParser
 
         foreach($data as $item){
             if($item['type'] == 'T_VARIABLE'){
-                $output['name'] = $item['data'];
+                $output['name'] = $this->cleanup($item['data']);
             }
         }
 
@@ -99,13 +102,25 @@ trait DocumentationParser
         $parts = explode('@', $data);
         if(isset($parts[0])){
             $string = trim($parts[0]);
-            $string = preg_replace('/\h+/', ' ', $string);
-            $string = preg_replace('/\v\h+/', chr(10), $string);
-            $string = preg_replace('/\v\v/', '<linebreak>', $string);
-            $string = preg_replace('/\v/', ' ', $string);
-            $string = str_replace('<linebreak>', chr(10).chr(10), $string);
+            $string = $this->cleanup($string,true);
             return $string;
         }
+    }
+
+    private function cleanup($string,$preserve_chapter_breaks=true){
+        $string = preg_replace('/\h+/', ' ', $string);
+        $string = preg_replace('/\v\h+/', chr(10), $string);
+
+        if($preserve_chapter_breaks){
+            $string = preg_replace('/\v\v/', '<linebreak>', $string);
+        }
+        $string = preg_replace('/\v/', ' ', $string);
+        $string = preg_replace('/\n/', ' ', $string);
+
+        if($preserve_chapter_breaks) {
+            $string = str_replace('<linebreak>', chr(10) . chr(10), $string);
+        }
+        return trim($string);
     }
 
     /**
@@ -115,13 +130,24 @@ trait DocumentationParser
      */
 
     private function docGetComment($data){
+
+        if(stristr($data, '/*')){
+            $comment = true;
+        }
+        
         $data = str_replace('/*', '', $data);
         $data = str_replace('*/', '', $data);
         $data = str_replace('*', '', $data);
-        $output['summary'] = $this->docGetDescription($data);
+
+        if(isset($comment)){
+            $output['summary'] = $this->docGetDescription($data);
+        }
+
         $output['parameters'] = $this->docGetParameters($data);
+        $output['links'] = $this->docGetLinks($data);
         $output['object'] = $this->docGetObject($data);
         $output['examples'] = $this->docGetExamples($data);
+
         return $output;
     }
 
@@ -135,15 +161,53 @@ trait DocumentationParser
         $output = array();
 
         foreach($parts as $part){
+            /* parse links to their own array */
+            if(stristr($part, '[link]')){
+                $link_part = explode('[link]', $part);
+                if(isset($link_part[1])){
+                    $link = trim($link_part[1]);
+                }
+
+                $part = $link_part[0];
+            }
+
             $part = trim($part);
+
             if(substr($part, 0,5) == 'param'){
+
                 preg_match('/\$.*[[:space:]]/U', $part,$parameters);
                 if(isset($parameters[0])){
                     $varname = trim($parameters[0]);
                     $docpart = preg_replace('/.*\v/U', '', $part,1);
                     $docpart = str_replace('param '.$varname, '', $docpart);
-                    $output[$varname] = trim($docpart);
+                    $docpart = str_replace('--', '', $docpart);
+
+                    $output[$varname]['doc'] = trim($docpart);
+                    if(isset($link)){
+                        $output[$varname]['link'] = $link;
+                    }
                 }
+            }
+        }
+
+        return $output;
+    }
+
+    /**
+     * Returns function links as an array
+     * @param $data
+     * @return array
+     */
+    private function docGetLinks($data){
+        $parts = explode('@', $data);
+        $output = array();
+
+        foreach($parts as $part){
+            $part = trim($part);
+            if(substr($part, 0,4) == 'link'){
+                $docpart = str_replace('link', '', $part);
+                $docpart = str_replace('--', '', $docpart);
+                $output[] = trim($docpart);
             }
         }
 
