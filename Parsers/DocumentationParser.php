@@ -93,6 +93,56 @@ trait DocumentationParser
         return $output;
     }
 
+
+    /**
+     * Get the top comment part of the phpdoc comment section
+     * @param $data
+     * @return mixed|string
+     */
+
+    private function docGetFileComment($original){
+
+       foreach ($this->tokens as $token){
+            if($token[0]['type'] == 'T_NAMESPACE'){
+                return false;
+            }
+
+            if($token[0]['type'] == 'T_DOC_COMMENT'){
+                $out = $this->glue($token);
+                $out = str_replace('/*', '', $out);
+                $out = str_replace('*/', '', $out);
+                $out = str_replace('*', '', $out);
+                return $this->extractLinkAndComment($out);
+            }
+        }
+
+        return false;
+    }
+
+    private function extractLinkAndComment($data){
+        if(stristr($data, '@')){
+            $parts = explode('@', $data);
+            $output = array();
+
+            foreach($parts as $part){
+                $part = trim($part);
+                if(substr($part, 0,4) == 'link'){
+                    $link = str_replace('link', '', $part);
+                    $link = str_replace('--', '', $link);
+                    $link = trim($link);
+                    $output['link'] = $link;
+                }
+            }
+
+            $output['summary'] = $this->cleanup($parts[0],true);
+            return $output;
+        } else {
+            $output['summary'] = $this->cleanup($data,true);
+        }
+
+    }
+
+
     /**
      * Get the top comment part of the phpdoc comment section
      * @param $data
@@ -146,7 +196,7 @@ trait DocumentationParser
         $output['parameters'] = $this->docGetParameters($data);
         $output['links'] = $this->docGetLinks($data);
         $output['object'] = $this->docGetObject($data);
-        $output['examples'] = $this->docGetExamples($data);
+        $output['example'] = $this->docGetExamples($data);
 
         return $output;
     }
@@ -182,7 +232,7 @@ trait DocumentationParser
                     $docpart = str_replace('param '.$varname, '', $docpart);
                     $docpart = str_replace('--', '', $docpart);
 
-                    $output[$varname]['doc'] = trim($docpart);
+                    $output[$varname]['summary'] = trim($docpart);
                     if(isset($link)){
                         $output[$varname]['link'] = $link;
                     }
@@ -221,7 +271,7 @@ trait DocumentationParser
      */
     private function docGetObject($data){
         $parts = explode('@', $data);
-        $output = array();
+        $output = '';
 
         foreach($parts as $part){
             $part = trim($part);
@@ -242,7 +292,7 @@ trait DocumentationParser
      */
     private function docGetExamples($data){
         $parts = explode('@', $data);
-        $output = array();
+        $output = '';
 
         foreach($parts as $part){
             $part = trim($part);
