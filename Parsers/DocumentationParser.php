@@ -28,11 +28,11 @@ trait DocumentationParser
             $string .= $item['data'];
             if($item['type'] == 'T_STRING'){
                 $string = str_replace('use', '', $item['data']);
-                $output['name'] = $this->cleanup($string);
+                $output['name'] = $this->cleanup($string,false);
             }
         }
 
-        $output['call'] = 'use '.$this->cleanup($string);
+        $output['call'] = 'use '.$this->cleanup($string,false);
         return $output;
     }
 
@@ -46,7 +46,7 @@ trait DocumentationParser
 
         foreach($data as $item){
             if($item['type'] == 'T_VARIABLE'){
-                $output['name'] = $this->cleanup($item['data']);
+                $output['name'] = $this->cleanup($item['data'],false);
             }
         }
 

@@ -4,6 +4,7 @@ namespace Doctim\Parsers;
 
 
 use function str_replace;
+use function stristr;
 
 class Parser {
 
@@ -46,6 +47,7 @@ class Parser {
         $output['file_name'] = $original;
         $output['doc_comment'] = $this->docGetFileComment($original);
         $output['doc_namespace'] = $this->extractDocNamespace();
+
         $class = $this->extractClassInfo();
         if($class){
             $output['class'] = $class;
@@ -173,7 +175,7 @@ class Parser {
             if($token[0]['type'] == 'T_NAMESPACE'){
                 $out = $this->glue($token);
                 $out = str_replace('namespace', '', $out);
-                $out = $this->cleanup($out);
+                $out = $this->cleanup($out,false);
                 return $out;
             }
         }
