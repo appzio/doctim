@@ -47,6 +47,8 @@ class Doctim {
     public $files;
     public $parser;
     private $output;
+    public $linefeed = "<\br>";
+    public $parse_md = true;
 
     /**
      * Will accept input either from command line or from browser, sets the directories. Make sure to use full paths.
@@ -69,6 +71,7 @@ class Doctim {
 
         $this->parser = new Parser();
         $this->parser->source_dir = $this->source_dir;
+        $this->parser->linefeed = $this->linefeed;
     }
 
     /**
@@ -84,8 +87,13 @@ class Doctim {
         $this->parseFileList($filelist);
         $output['docs'] = $this->output;
 
-        $filename = basename($this->source_dir) .'-'.date('d-m-Y-m-h') .'.json';
-        file_put_contents($this->target_dir.$filename,json_encode($output,JSON_UNESCAPED_UNICODE));
+        if(substr($this->target_dir,-5,5) == '.json'){
+            file_put_contents($this->target_dir,json_encode($output,JSON_UNESCAPED_UNICODE));
+        } else {
+            $filename = basename($this->source_dir) .'-'.date('d-m-Y-m-h') .'.json';
+            file_put_contents($this->target_dir.$filename,json_encode($output,JSON_UNESCAPED_UNICODE));
+        }
+
         $this->errorOutput('Done.');
         die();
     }
@@ -100,7 +108,11 @@ class Doctim {
 
         foreach ($filelist as $key=>$file){
             if(!is_string($key)){
-                $parse_result = $this->parser->parse($dir.$file);
+                if(substr($file, -3, 3) == '.MD'){
+                    $parse_result = $this->parser->parseMdFile($dir.$file);
+                } else {
+                    $parse_result = $this->parser->parse($dir.$file);
+                }
                 if(is_array($parse_result)){
                     $this->output[] = $parse_result;
                 }
@@ -124,8 +136,14 @@ class Doctim {
             if (is_dir($dir . DIRECTORY_SEPARATOR . $value)) {
                 $result[$value] = $this->getFiles($dir . DIRECTORY_SEPARATOR . $value);
             } else {
-                if (substr($value, -4, 4) == '.php') {
-                    $result[] = $value;
+                if($this->parse_md){
+                    if (substr($value, -4, 4) == '.php' OR substr($value, -3, 3) == '.MD') {
+                        $result[] = $value;
+                    }
+                } else {
+                    if (substr($value, -4, 4) == '.php') {
+                        $result[] = $value;
+                    }
                 }
             }
         }

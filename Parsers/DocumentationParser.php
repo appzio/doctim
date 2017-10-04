@@ -164,11 +164,12 @@ trait DocumentationParser
         if($preserve_chapter_breaks){
             $string = preg_replace('/\v\v/', '<linebreak>', $string);
         }
+
         $string = preg_replace('/\v/', ' ', $string);
         $string = preg_replace('/\n/', ' ', $string);
 
         if($preserve_chapter_breaks) {
-            $string = str_replace('<linebreak>', chr(10) . chr(10), $string);
+            $string = str_replace('<linebreak>', $this->linefeed.$this->linefeed, $string);
         }
         return trim($string);
     }

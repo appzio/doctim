@@ -11,7 +11,7 @@ class Parser {
 
     public $source_dir;
     public $tokens;
-
+    public $linefeed;
 
     /**
      * Main parses function for individual PHP file
@@ -62,6 +62,19 @@ class Parser {
         $output['public_properties'] = $this->extract('T_PUBLIC');
         $output['private_properties'] = $this->extract('T_PRIVATE');
 
+        return $output;
+    }
+
+    public function parseMdfile($file){
+        $original = $file;
+        $file = $this->source_dir.$file;
+
+        if(is_dir($file) OR !file_exists($file)){
+            return false;
+        }
+
+        $output['file_name'] = $original;
+        $output['markup'] = file_get_contents($file);
         return $output;
     }
 
