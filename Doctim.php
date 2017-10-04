@@ -113,14 +113,15 @@ class Doctim {
                 } else {
                     $parse_result = $this->parser->parse($dir.$file);
                 }
-                if(is_array($parse_result)){
-                    $this->output[] = $parse_result;
-                }
+
+                $this->output[] = $parse_result;
+
             } else {
                 $this->parseFileList($file,$dir.$key.'/');
             }
         }
     }
+    
 
     /* gets an array of all php files */
     public function getFiles($dir)
