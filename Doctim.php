@@ -87,6 +87,11 @@ class Doctim {
         $this->parseFileList($filelist);
         $output['docs'] = $this->output;
 
+        if(isset($output['hierarchy'][0]) AND $output['hierarchy'][0] == 'README.MD'){
+            unset($output['hierarchy'][0]);
+            $output['hierarchy']['Overview'] = array('README.MD');
+        }
+
         if(substr($this->target_dir,-5,5) == '.json'){
             file_put_contents($this->target_dir,json_encode($output,JSON_UNESCAPED_UNICODE));
         } else {
@@ -121,7 +126,7 @@ class Doctim {
             }
         }
     }
-    
+
 
     /* gets an array of all php files */
     public function getFiles($dir)

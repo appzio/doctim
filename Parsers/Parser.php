@@ -45,7 +45,7 @@ class Parser {
         $this->tokens = $tokens;
 
         $output['file_name'] = $original;
-        $output['doc_comment'] = $this->docGetFileComment($original);
+        $output['doc_comment'] = $this->docGetFileComment();
         $output['doc_namespace'] = $this->extractDocNamespace();
 
         $class = $this->extractClassInfo();

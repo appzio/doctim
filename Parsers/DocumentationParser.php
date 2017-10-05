@@ -24,6 +24,9 @@ trait DocumentationParser
         $string = '';
         $output = array();
 
+        $call = $this->glue($data);
+        $call = $this->cleanup($call,false);
+
         foreach($data as $item){
             $string .= $item['data'];
             if($item['type'] == 'T_STRING'){
@@ -32,7 +35,7 @@ trait DocumentationParser
             }
         }
 
-        $output['call'] = 'use '.$this->cleanup($string,false);
+        $output['call'] = $call;
         return $output;
     }
 
@@ -100,26 +103,33 @@ trait DocumentationParser
      * @return mixed|string
      */
 
-    private function docGetFileComment($original){
+    private function docGetFileComment(){
 
        foreach ($this->tokens as $token){
             if($token[0]['type'] == 'T_NAMESPACE'){
-                return false;
+                $output['summary'] = false;
+                return $output;
             }
 
             if($token[0]['type'] == 'T_DOC_COMMENT'){
+
                 $out = $this->glue($token);
                 $out = str_replace('/*', '', $out);
                 $out = str_replace('*/', '', $out);
                 $out = str_replace('*', '', $out);
-                return $this->extractLinkAndComment($out);
+
+                $return = $this->extractLinkAndComment($out);
+                return $return;
+
             }
         }
 
-        return false;
+        $output['summary'] = false;
+        return $output;
     }
 
     private function extractLinkAndComment($data){
+
         if(stristr($data, '@')){
             $parts = explode('@', $data);
             $output = array();
@@ -138,23 +148,23 @@ trait DocumentationParser
             return $output;
         } else {
             $output['summary'] = $this->cleanup($data,true);
+            return $output;
+
         }
 
     }
 
 
     /**
-     * Get the top comment part of the phpdoc comment section
+     * Gets the entire comment without @ marked lines
      * @param $data
      * @return mixed|string
      */
     private function docGetDescription($data){
-        $parts = explode('@', $data);
-        if(isset($parts[0])){
-            $string = trim($parts[0]);
-            $string = $this->cleanup($string,true);
-            return $string;
-        }
+
+        $output = preg_replace('/@.*/', '',$data);
+        $output = $this->cleanup($output,true);
+        return $output;
     }
 
     private function cleanup($string,$preserve_chapter_breaks=true){
@@ -171,6 +181,11 @@ trait DocumentationParser
         if($preserve_chapter_breaks) {
             $string = str_replace('<linebreak>', $this->linefeed.$this->linefeed, $string);
         }
+
+        $string = str_replace($this->linefeed.$this->linefeed.$this->linefeed, $this->linefeed.$this->linefeed, $string);
+        $string = str_replace($this->linefeed.$this->linefeed.$this->linefeed, $this->linefeed.$this->linefeed, $string);
+        $string = str_replace($this->linefeed.$this->linefeed.$this->linefeed, $this->linefeed.$this->linefeed, $string);
+
         return trim($string);
     }
 
@@ -194,6 +209,7 @@ trait DocumentationParser
             $output['summary'] = $this->docGetDescription($data);
         }
 
+        $output['return'] = $this->docGetReturn($data);
         $output['parameters'] = $this->docGetParameters($data);
         $output['links'] = $this->docGetLinks($data);
         $output['object'] = $this->docGetObject($data);
@@ -253,12 +269,15 @@ trait DocumentationParser
         $parts = explode('@', $data);
         $output = array();
 
+
         foreach($parts as $part){
             $part = trim($part);
             if(substr($part, 0,4) == 'link'){
-                $docpart = str_replace('link', '', $part);
-                $docpart = str_replace('--', '', $docpart);
-                $output[] = trim($docpart);
+                $only_link = explode($part, '\n');
+                 preg_match('/link[[:blank:]].*/', $part,$only_link);
+                 $only_link = str_replace('link', '', $only_link[0]);
+                 $only_link = trim($only_link);
+                 $output[] = $only_link;
             }
         }
 
@@ -297,7 +316,7 @@ trait DocumentationParser
 
         foreach($parts as $part){
             $part = trim($part);
-            if(substr($part, 0,3) == 'example'){
+            if(substr($part, 0,7) == 'example'){
                 $docpart = trim($part);
                 $docpart = str_replace('example ', '', $docpart);
                 return $docpart;
@@ -306,6 +325,28 @@ trait DocumentationParser
 
         return $output;
     }
+
+    /**
+     * Returns a custom delimeter @example which is a github url normally
+     * @param $data
+     * @return array|mixed|string
+     */
+    private function docGetReturn($data){
+        $parts = explode('@', $data);
+        $output = '';
+
+        foreach($parts as $part){
+            $part = trim($part);
+            if(substr($part, 0,6) == 'return'){
+                $docpart = trim($part);
+                $docpart = str_replace('return ', '', $docpart);
+                return $docpart;
+            }
+        }
+
+        return $output;
+    }
+
 
 
 
