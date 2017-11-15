@@ -156,15 +156,17 @@ trait DocumentationParser
 
 
     /**
-     * Gets the entire comment without @ marked lines
+     * Gets the top part of the comment, before @
      * @param $data
      * @return mixed|string
      */
     private function docGetDescription($data){
-
-        $output = preg_replace('/@.*/', '',$data);
-        $output = $this->cleanup($output,true);
-        return $output;
+        $parts = explode('@', $data);
+        if(isset($parts[0])){
+            $string = trim($parts[0]);
+            $string = $this->cleanup($string,true);
+            return $string;
+        }
     }
 
     private function cleanup($string,$preserve_chapter_breaks=true){

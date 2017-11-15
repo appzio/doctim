@@ -75,7 +75,12 @@ class Parser {
             return false;
         }
 
-        $output['file_name'] = $original;
+        if($original == 'README.MD'){
+            $output['file_name'] = 'Overview/'.$original;
+        } else {
+            $output['file_name'] = $original;
+        }
+
         $output['markup'] = file_get_contents($file);
         return $output;
     }
